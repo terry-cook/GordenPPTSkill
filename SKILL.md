@@ -59,11 +59,18 @@ python3 scripts/check_update.py     # 列出 added / modified / removed
 
 ### 模式 A：从内置模板里挑
 
-**默认走这条路。** 17 套内置模板覆盖了绝大多数中文场景。
+**默认走这条路。** 19 套内置模板覆盖了绝大多数中文场景。
 
 1. **读 [`templates/INDEX.md`](./templates/INDEX.md)** ——一份精简清单，列出每套模板的风格、主色、适用场景、页数。
-2. **匹配用户输入** —— 把用户描述（场景、风格关键词、所需页面类型、颜色偏好）和每个模板的 intro.md 对比，挑出 1-3 个最匹配的。
-3. **不确定时给用户看预览图** —— 把候选模板的 `templates/<slug>/preview.png` 通过 AskQuestion 一起发给用户，让用户选。
+2. **匹配用户输入** —— 把用户描述（场景、风格关键词、所需页面类型、颜色偏好）和每个模板的 intro.md 对比。
+3. **选模板的决策规则**：
+   - **用户已明确指定模板** → 直接用。
+   - **你高度确信只有 1 个模板最合适**（场景 + 风格 + 主色都强匹配，且明显优于其它）→ 可直接用，但开工前一句话告诉用户你选了哪个、为什么，给用户一个否决的机会。
+   - **其余所有情况（用户没指定，或你不能完全把握哪个最合适）→ 必须让用户来选**：
+     - 用 AskQuestion 提供 **正好 3 个**候选模板，每个附上一句话理由（风格 / 适用场景 / 页数），并**把对应的 `templates/<slug>/preview.png` 一并展示**给用户看图决策。
+     - 选项里**始终额外带一个「都不满意，换一批」**。用户选它时，再按匹配度给出**另外 3 个**没出现过的候选（同样附预览图）。可反复换，直到用户选定或候选用尽。
+     - 候选都用尽仍不满意 → 询问用户更具体的偏好（风格 / 颜色 / 场景），或转模式 C 原创。
+   - ⚠️ 不要在没让用户看预览图的情况下，仅凭模糊匹配就自作主张定一个模板。
 4. **拿到目标模板后**：
    - 读 `templates/<slug>/intro.md`（高度浓缩，告诉你这个模板的特性）
    - 读 `templates/<slug>/detail.json`（结构化数据，告诉你每页 / 每个文本位的细节）
@@ -74,12 +81,12 @@ python3 scripts/check_update.py     # 列出 added / modified / removed
 当用户提供了 .pptx 文件且明确希望以它作模板时：
 
 1. 把用户的 pptx 当作"未知模板"
-2. 用 `scripts/render_slides.py` + `scripts/extract_template.py` 解析它，**得到 raw.json 和每页 PNG**
-3. 自己看每页（PNG + raw.json 文本）：
+2. 用 `scripts/render_slides.py` 把每页渲染成 PNG，再用 `python-pptx` 现场探查每页的 shape / paragraph / run 结构（无需额外脚本）
+3. 自己看每页（PNG + shape 输出）：
    - 推断每页是什么角色（封面 / 目录 / 章节扉页 / 内容页 / 结束 / 模板宣传）
    - 推断每页适合放什么内容
-   - 标记不要使用的页面（模板宣传 / "稻壳儿" 之类）
-4. 按 [模式 B 工作流](./references/custom-template-workflow.md) 进行后续选页 + 文字替换
+   - 跳过模板宣传 / "稻壳儿" / 感谢下载 之类
+4. 按 [模式 B 工作流](./references/custom-template-workflow.md) 用 explicit `address` 写 `edits.json` 选页 + 文字替换
 5. **不要修改用户模板原文件**；所有改动写到新的 output.pptx
 
 ### 模式 C：完全原创（不基于任何模板）
@@ -141,30 +148,27 @@ python3 scripts/build_pptx.py \
     --detail $TEMPLATE/detail.json \
     --strict
 
-# 5. （可选）生成最终预览图给用户看
-python3 scripts/render_slides.py out/final.pptx out/renders
-python3 scripts/stitch_preview.py out/renders out/preview.png --pages 1 3 6 9
+# 5. （可选）渲染最终 pptx 给用户预览 / 自检（每页一张 PNG）
+python3 scripts/render_slides.py out/final.pptx out/renders --dpi 144
 ```
 
 ## 目录结构
 
 ```
-ppt-skill/
+GordenPPTSkill/
 ├── SKILL.md               ← 本文件
-├── VERSION                ← 当前版本号（例 1.0.0）
+├── VERSION                ← 当前版本号
 ├── CHANGELOG.md           ← 人类可读变更日志
 ├── updates.json           ← 机器可读版本增量索引
-├── manifest.json          ← 所有受版本管理文件的 sha256 与版本归属
+├── manifest.json          ← 所有文件的 sha256 与版本归属
 ├── README.md              ← 仓库概览（用户阅读）
 ├── scripts/
-│   ├── render_slides.py       # pptx → PDF → PNG
-│   ├── extract_template.py    # pptx → raw.json 结构化文本+形状
-│   ├── stitch_preview.py      # 4 页拼接为 preview.png
-│   ├── build_pptx.py          # 按 edits.json 选页+换字
-│   ├── batch_extract.py       # 批处理
-│   ├── scaffold_detail.py     # 由 raw.json 自动生成 detail.json 草稿
+│   ├── build_pptx.py          # 按 edits.json 选页 + 换字 → 输出 pptx（含出框检测）
+│   ├── render_slides.py       # pptx → PDF → 每页 PNG（预览/自检）
+│   ├── compute_capacity.py    # 由 template.pptx 计算每个 slot 的容量字段（数据准备）
 │   ├── check_update.py        # 检查远端是否有更新
-│   └── apply_update.py        # 增量更新本地文件
+│   ├── apply_update.py        # 增量更新本地文件
+│   └── build_manifest.py      # 重建 manifest.json
 ├── references/
 │   ├── workflow.md
 │   ├── pptx-edit-schema.md
@@ -176,7 +180,7 @@ ppt-skill/
     └── <slug>/
         ├── template.pptx
         ├── intro.md       # 高度浓缩简介
-        ├── detail.json    # 详细页面 / slot 数据
+        ├── detail.json    # 详细页面 / slot 数据（含容量字段 + type_scale）
         └── preview.png    # 4 页 2×2 拼接预览图
 ```
 
@@ -184,13 +188,12 @@ ppt-skill/
 
 | 脚本 | 干嘛用 |
 |---|---|
-| `render_slides.py` | 把任意 pptx 渲染成每页一张 PNG（用 LibreOffice + pdftoppm） |
-| `extract_template.py` | 把 pptx 的形状 / 文本结构 dump 成 raw.json，并产出 text_overview.md |
-| `stitch_preview.py` | 选 4 张 PNG 拼成一张 2×2 预览图 |
-| `build_pptx.py` | 按 `edits.json`（含选页、文字替换）从模板生成最终 pptx |
-| `scaffold_detail.py` | 由 raw.json 生成 detail.json 初稿（机械填充 slot_id 等） |
+| `build_pptx.py` | 按 `edits.json`（选页 + 文字替换）从模板生成最终 pptx；带出框检测，`--strict` 时出框拒绝保存 |
+| `render_slides.py` | 把任意 pptx 渲染成每页一张 PNG（用 LibreOffice + pdftoppm），用于预览 / 自检 |
+| `compute_capacity.py` | 由 template.pptx 算出每个 slot 的 `chars_per_line/max_lines/max_chars` 等容量字段（自带模板已算好，仅在加新模板时需要） |
 | `check_update.py` | 对比本地 VERSION 和远端 updates.json，告诉你要不要更新 |
 | `apply_update.py` | 按 updates.json 的 delta 列表只下载变动文件 |
+| `build_manifest.py` | 重新计算 manifest.json |
 
 ## 字体说明
 

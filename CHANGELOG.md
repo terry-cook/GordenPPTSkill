@@ -2,6 +2,31 @@
 
 按版本倒序列出可读变更。机器读取请用 [`updates.json`](./updates.json)；只读哪些文件变动请用 [`manifest.json`](./manifest.json) 的 `last_modified` 字段。
 
+## 1.0.8 — 2026-05-29
+
+**模板推荐改为"3 选 1 + 换一批" + 修正 SKILL.md 的两处文档 bug。**
+
+新规则（SKILL.md 模式 A 第 3 条 / workflow.md A3）：
+
+- 用户已指定模板 → 直接用。
+- AI 高度确信唯一最佳 → 可直接用，但先告知选了哪个 + 理由，留否决余地。
+- **其余情况（用户没指定 / AI 拿不准）→ 必须让用户选**：用 AskQuestion 给**正好 3 个**候选 + 各自 `preview.png` + 一句话理由；选项永远多带一个**「都不满意，换一批」**，选它就再给**另外 3 个**没出现过的候选，可反复换；用尽仍不满意则追问偏好或转原创。
+- 不再允许"不看预览图就凭模糊匹配自作主张定模板"。
+
+顺带修复两处文档 bug（之前版本把本地 SKILL.md 覆盖到公共仓库时引入）：
+
+- 模式 B 不再让 AI 运行未随包发布的 `extract_template.py`，改为 `render_slides.py` + `python-pptx` 现场探查 + explicit address 写 edits.json。
+- 目录结构 / 关键脚本表更新为**实际随包发布的 6 个脚本**（build_pptx / render_slides / compute_capacity / check_update / apply_update / build_manifest），删除了 extract_template / stitch_preview / scaffold_detail / batch_extract / enrich_detail 等仅本地数据准备用、未发布的脚本引用。
+- "17 套"更正为"19 套"。
+
+纯文档更新，无模板 / 脚本逻辑变动。
+
+升级方式：
+
+```bash
+python3 scripts/apply_update.py
+```
+
 ## 1.0.7 — 2026-05-29
 
 **根治"文字出框" + 强制"同级标题字号一致"。**

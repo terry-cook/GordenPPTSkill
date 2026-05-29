@@ -1,9 +1,24 @@
 {
   "$schema": "ppt-skill-updates/v1",
-  "latest_version": "1.0.7",
+  "latest_version": "1.0.8",
   "update_source": "git+https://github.com/GordenSun/GordenPPTSkill.git#main",
   "_update_source_help": "Set update_source to a URL prefix (e.g. https://example.com/ppt-skill/v1/) that hosts the same updates.json + the per-file mirror, OR to a git remote+branch in the form 'git+https://...repo.git#main'. When unset, check_update.py reports 'Update source unset' and exits cleanly.",
   "history": [
+    {
+      "version": "1.0.8",
+      "released_at": "2026-05-29",
+      "summary": "Template recommendation now offers 3 previews + a 'show another batch' option when unsure; also fixed SKILL.md mode-B (no longer references the unshipped extract_template.py) and corrected the script list / template count.",
+      "added": [],
+      "modified": [
+        "VERSION",
+        "CHANGELOG.md",
+        "updates.json",
+        "manifest.json",
+        "SKILL.md",
+        "references/workflow.md"
+      ],
+      "removed": []
+    },
     {
       "version": "1.0.7",
       "released_at": "2026-05-29",
