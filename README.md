@@ -23,6 +23,12 @@
 
 3、技能自动更新机制：如果我更新了可选用的PPT模板，使用技能时会自动更新技能。技能像软件一样可以更新
 
+## 使用方法
+极其简单，把这段提示词发给你的Agent即可：
+
+在当前文件夹安装这个Skill：https://github.com/GordenSun/GordenPPTSkill
+然后做一个复杂、豪华的PPT，读取本地XXX文件，来介绍XXX项目
+
 ## 谁要看这个
 
 - 想给自己用的 AI 助手装一个"做 PPT"技能的人：**请读 [SKILL.md](./SKILL.md)**
